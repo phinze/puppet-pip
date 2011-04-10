@@ -25,6 +25,7 @@ Puppet::Type.type(:package).provide :pip,
   # that's managed by `pip` or an empty array if `pip` is not available.
   def self.instances
     packages = []
+    find_pip
     execpipe "#{command :pip} freeze" do |process|
       process.collect do |line|
         next unless options = parse(line)
@@ -39,6 +40,7 @@ Puppet::Type.type(:package).provide :pip,
   # Return structured information about a particular package or `nil` if
   # it is not installed or `pip` itself is not available.
   def query
+    self.class.find_pip
     execpipe "#{command :pip} freeze" do |process|
       process.each do |line|
         options = self.class.parse(line)
@@ -104,12 +106,16 @@ Puppet::Type.type(:package).provide :pip,
   def lazy_pip(*args)
     pip *args
   rescue NoMethodError => e
-    if pathname = `which pip`.chomp
-      self.class.commands :pip => pathname
-      pip *args
-    else
-      raise e
-    end
+    self.class.find_pip
+    pip *args
   end
 
+  def self.find_pip
+    if pathname = `which pip`.chomp
+      self.commands :pip => pathname
+      command :pip
+    else
+      raise "could not find `pip` command"
+    end
+  end
 end

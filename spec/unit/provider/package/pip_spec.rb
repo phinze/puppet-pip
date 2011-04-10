@@ -31,11 +31,11 @@ describe provider_class do
   describe "instances" do
 
     it "should return an array when pip is present" do
-      provider_class.expects(:command).with(:pip).returns("/fake/bin/pip")
+      provider_class.stubs(:command).with(:pip).returns("/fake/bin/pip")
       p = stub("process")
       p.expects(:collect).yields("Django==1.2.5")
-      provider_class.expects(:execpipe).with("/fake/bin/pip freeze").yields(p)
-      provider_class.instances
+      provider_class.stubs(:execpipe).with("/fake/bin/pip freeze").yields(p)
+      provider_class.instances.first.name == "Django==1.2.5"
     end
 
     it "should return an empty array when pip is missing" do
@@ -44,6 +44,12 @@ describe provider_class do
       provider_class.instances.should == []
     end
 
+    it "should be able to find the pip that exists on the system" do
+      provider_class.stubs(:`).returns('/path/to/some/pip')
+      provider_class.stubs(:execpipe).returns('')
+      provider_class.instances
+      expect { provider_class.command :pip }.to_not raise_error
+    end
   end
 
   describe "query" do
@@ -76,6 +82,14 @@ describe provider_class do
       p.expects(:each).yields("sdsfdssdhdfyjymdgfcjdfjxdrssf==0.0.0")
       @provider.expects(:execpipe).with("/fake/bin/pip freeze").yields(p)
       @provider.query.should == nil
+    end
+
+    it "should be able to find the pip that exists on the system" do
+      provider_class.stubs(:`).returns('/path/to/some/pip')
+      instance = provider_class.new
+      instance.stubs(:execpipe).returns('')
+      instance.query
+      expect { provider_class.command :pip }.to_not raise_error
     end
 
   end
