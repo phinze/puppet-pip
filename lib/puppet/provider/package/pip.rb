@@ -44,7 +44,7 @@ Puppet::Type.type(:package).provide :pip,
     execpipe "#{command :pip} freeze" do |process|
       process.each do |line|
         options = self.class.parse(line)
-        return options if options[:name] == @resource[:name]
+        return options if options[:name].downcase == @resource[:name].downcase
       end
     end
     nil
